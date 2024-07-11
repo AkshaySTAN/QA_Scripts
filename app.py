@@ -1,50 +1,41 @@
+import asyncio
 import json
-import aiomysql as aiomysql
-import pymongo
-import requests
-from bson import ObjectId
+import aiohttp
 from quart import Quart, request, render_template, redirect, url_for
-from Inventory_purchase import purchase_inventory
-from dbConnection import run_operations
-from clubLeaderboard import club_leaderboard_operations
-import io
-import sys
-from urls import ADMIN_URL, SUPER_URL, BASIC_ENDPOINTS
-from Admin_panel_autologin import generate_admin_token
+from aiomysql import connect
+import time
+import aiomysql
+import requests
+from aiomysql import connection
+from bson import ObjectId
+import pymongo
+from pymongo import MongoClient
 
 app = Quart(__name__)
 
-# Mongo connection details
-MONGO_DB_URL = "mongodb+srv://stage-stan:lqlFL2GvRItS3YFi@stan-stage-01.dfrdedi.mongodb.net/"
-MONGO_DB_NAME = "stage"
-COLLECTION_NAME = "communities"
-
-# SQL connection
+# Database and API settings
 DB_HOST = 'nonprod-stan.cuuqnikjun1p.ap-south-1.rds.amazonaws.com'
 DB_PORT = 3306
 DB_USER = 'admin'
 DB_PASS = 'Stan.321'
 DB_NAME = 'stage_stan'
 token_storage = []
-ws_conns_array = []
-members = []
-otput = ""
 
-Community_BASE_URL = "https://stage-api.getstan.app/api/v4/communities/"
+BASE_URL = "https://stage-api.getstan.app/api/v4/communities/"
 VERIFY_OTP_URL = "https://stage-api.getstan.app/api/v4/verify/otp"
 
 ENDPOINTS = {
-    "community_join": f"{Community_BASE_URL}join-community",
-    "send_reaction": f"{Community_BASE_URL}message/react",
-    "send_message": f"{Community_BASE_URL}message/send",
-    "remove_member": f"{Community_BASE_URL}remove-member",
-    "get_comments": f"{Community_BASE_URL}comments",
-    "delete": f"{Community_BASE_URL}delete"
+    "community_join": f"{BASE_URL}join-community",
+    "send_reaction": f"{BASE_URL}message/react",
+    "send_message": f"{BASE_URL}message/send",
+    "remove_member": f"{BASE_URL}remove-member",
+    "get_comments": f"{BASE_URL}comments",
+    "delete": f"{BASE_URL}delete"
     # add other endpoints here
 }
 
 generic_headers = {
-    "appversion": "121",
+    "appversion": "112",
     "platform": "android",
     "Content-Type": "application/json"
 }
@@ -66,6 +57,18 @@ data_mod = {
 }
 
 
+@app.before_serving
+async def setup_app():
+    app.db_connection = await connect(host=DB_HOST, port=DB_PORT, user=DB_USER, password=DB_PASS, db=DB_NAME)
+    print("Database connected...")
+
+
+@app.teardown_appcontext
+async def close_db(exc):
+    app.db_connection.close()
+    print("Database connection closed")
+
+
 @app.route('/join_community_result')
 async def join_community_result():
     output = request.args.get('output')  # Get the output from the query parameter
@@ -74,44 +77,7 @@ async def join_community_result():
     return await render_template('join_community_result.html', output=output)
 
 
-@app.route('/create_club_result')
-async def create_club_result():
-    output = request.args.get('output')  # Get the output from the query parameter
-    if output is None:
-        output = "No output provided"
-    return await render_template('create_club_result.html', output=output)
-
-
-@app.route('/remove_user_result')
-async def remove_user_result():
-    output = request.args.get('output')  # Get the output from the query parameter
-    if output is None:
-        output = "No output provided"
-    return await render_template('remove_user_result.html', output=output)
-
-
-@app.route('/club_leaderboard_result')
-async def club_leaderboard_result():
-    output = await club_leaderboard_operations()  # Get the output from the query parameter
-    if output is None:
-        output = "No output provided"
-    return await render_template('club_leaderboard_result.html', output=output)
-
-
-@app.route('/purchases_result')
-async def purchases_result():
-    output = await run_operations()  # Get the output from the query parameter
-    if output is None:
-        output = "No output provided"
-    return await render_template('purchases_result.html', output=output)
-
-
-@app.route('/inventory_result')
-async def inventory_operations_result():
-    output = await purchase_inventory()
-    return await render_template('inventory_operations_result.html', output=output)
-
-
+@app.route('/', methods=['GET', 'POST'])
 @app.route('/', methods=['GET', 'POST'])
 async def form():
     if request.method == 'POST':
@@ -130,40 +96,23 @@ async def form():
         elif action == 'delete_community':
             user_id = form_data.get('user_id')  # Specific to delete_community action
             output = await delete_community(community_id, user_id)
-        elif action == 'inventory_operations':
-            output = await purchase_inventory()
-        elif action == 'club_leaderboard':
-            output = await club_leaderboard_operations()
-        elif action == 'purchases':
-            output = await run_operations()
-        elif action == 'create_club':
-            last_id = int(form_data.get('last_id', 0))
-            rang = form_data.get('range', 0)
-            output = await create_club(last_id, rang)
         else:
             return "Invalid action", 400  # Return a 400 Bad Request for undefined actions
-        print("_________________")
+
         return redirect(url_for(f'{action}_result', output=output))
 
     # Show the form by default if it's a GET request or no action was taken.
-    return await render_template('test_form.html')
+    return await render_template('form.html')
 
 
-async def handle_action(action, last_id, community_id, rang, user_id):
+
+async def handle_action(action, last_id, community_id, rang):
     if action == 'join_community':
         await join_community(last_id, community_id, rang)
     elif action == 'remove_user':
         await remove_user(community_id, rang)
     elif action == 'delete_community':
         await delete_community(community_id, user_id)
-    elif action == 'inventory_operations':
-        await purchase_inventory()
-    elif action == 'club_leaderboard':
-        await club_leaderboard_operations()
-    elif action == 'purchases':
-        await run_operations()
-    elif action == 'create_club':
-        await create_club(user_id, rang)
     else:
         raise ValueError("Invalid action")
 
@@ -186,7 +135,7 @@ async def join_community(last_id, community_id, rang):
     finally:
         conn.close()
     # Example function for joining a community
-    # lastid = last_id
+    lastid = last_id
     JoinCommunity = {
         "communityId": community_id,
         "password": 'null',
@@ -207,10 +156,10 @@ async def join_community(last_id, community_id, rang):
             'Authorization': f'Bearer {token_storage[i]}',
             'AppVersion': '118'
         }
-        # msgheader = {
-        #     'Authorization': f'Bearer {admin_token}',
-        #     'AppVersion': '118'
-        # }
+        msgheader = {
+            'Authorization': f'Bearer {admin_token}',
+            'AppVersion': '118'
+        }
         join = requests.post(ENDPOINTS['community_join'], json=JoinCommunity, headers=headers)
         print(f"JOIN Status Code: {join.status_code}")
         print(f"Response: {join.json()}")
@@ -225,9 +174,6 @@ async def join_community(last_id, community_id, rang):
 
 
 async def remove_user(community_id, rang):
-    old_stdout = sys.stdout
-    redirected_output = io.StringIO()
-    sys.stdout = redirected_output
     url = "https://stage-api.getstan.app/api/v4/verify/otp"
     json_data_mod = json.dumps(data_mod)
     response_mod = requests.post(url, headers=generic_headers, data=json_data_mod)
@@ -247,19 +193,12 @@ async def remove_user(community_id, rang):
         members.append(doc['userId'])
         print(doc['userId'])
         rem_user = {
-            "communityId": community_id,
+            "communityId": com_id,
             "userId": doc['userId']
         }
 
         remove = requests.post(ENDPOINTS['remove_member'], json=rem_user, headers=headers)
-        print("---here-------")
         print(remove.json())
-    sys.stdout = old_stdout
-    # Get the captured output
-    output = redirected_output.getvalue()
-    redirected_output.close()
-    # Now you can return this output as part of your response to the front end
-    return output
 
 
 async def delete_community(community_id, user_id):
@@ -272,7 +211,7 @@ async def delete_community(community_id, user_id):
         query = f"SELECT phone FROM user WHERE id = {user_id} AND deletedAt IS NULL"
         await cursor.execute(query)
         phon = await cursor.fetchone()
-        data_MOD = {
+        data_mod = {
             "phone": phon,
             "otp": "5555",
             "deviceInfo": {
@@ -289,7 +228,7 @@ async def delete_community(community_id, user_id):
         }
 
     url = "https://stage-api.getstan.app/api/v4/verify/otp"
-    json_data_mod = json.dumps(data_MOD)
+    json_data_mod = json.dumps(data_mod)
     response_mod = requests.post(url, headers=generic_headers, data=json_data_mod)
     result_mod = response_mod.json()
     admin_token = result_mod.get('access_token')
@@ -366,96 +305,26 @@ async def generate_token(phone):
         return None
 
 
-async def create_club(user_id, rang):
-    old_stdout = sys.stdout
-    new_stdout = io.StringIO()
-    sys.stdout = new_stdout
-    conn = None
-    user_ids = []
-    try:
-        # Initialize py connection
-        conn = await aiomysql.connect(
-            host='nonprod-stan.cuuqnikjun1p.ap-south-1.rds.amazonaws.com',
-            port=3306, user='admin', password='Stan.321', db='stage_stan'
-        )
-        print('Database connected....')
-
-        async with conn.cursor() as cursor:
-            for i in range(int(rang)):  # assuming rang is the upper limit integer
-                print(f"Processing index: {i}")  # Debug statement
-                query = f"SELECT phone FROM user WHERE id = '{user_id}' AND deletedAt IS NULL"
-                await cursor.execute(query)
-                result = await cursor.fetchone()
-                if result is not None:
-                    print(f"Phone for user_id {user_id}: {result[0]}")
-                    token = await generate_token(result[0])
-                    token_storage.append(token)
-                    user_ids.append(user_id)
-                    user_id = int(user_id) + 1
-                    print(f"Token generated successfully for the user: {token}")
-                else:
-                    print("No user found, or user is deleted.")
-                    continue
-                print("+++++ Starting clubs test ++++\n", token_storage)
-                #  for i in range(int(rang)):
-                payload = {
-                    "clubHosterType": "UGC",
-                    "isClubHoster": True,
-                    "playerBanTimeInOnevone": "Invalid date",
-                    "gameId": "bgmi",
-                    "id": user_ids[i]
-                }
-                print(payload, "payload")
-                Secret_Token = await generate_admin_token()
-                assign_type_header = {
-                    'Accept': '*/*',
-                    'Connection': 'keep-alive',
-                    'accept': 'application/json',
-                    'origin': 'https://stan-admin-7.web.app',
-                    'Authorization': f'Bearer {Secret_Token}'
-                }
-                response = requests.post(url=f"{ADMIN_URL}{BASIC_ENDPOINTS['assign_club_type']}",
-                                         headers=assign_type_header, json=payload)
-                print('Assigning UGC category to user => ' + str(user_id))
-                print(response.text)
-                files = {
-                    'thumbnail': (
-                    'collect.png', open('/Users/macbookprom1/PycharmProjects/collect.png', 'rb'), 'image/png'),
-                    'title': (None, f'{user_id}'),
-                    'tags': (None, 'Music'),
-                    'roomStatus': (None, 'Live'),
-                    'pinnedMessage': (None, '{"message":"","link":""}')
-                }
-                createClubHeaders = {
-                        'Accept': '*/*',
-                        'GameId': 'freefire',
-                        'AppVersion': '133',
-                        'Platform': 'android',
-                        'SID': '1714035078106-20645',
-                        'Authorization': f'Bearer {token}'
-                }
-                create_a_club = requests.post(url=f"{SUPER_URL}{BASIC_ENDPOINTS['create_club']}",
-                                                  headers=createClubHeaders, files=files)
-                print('Club created for user =>' + str(user_id))
-                print('\n')
-                print(create_a_club.text)
-    except Exception as e:
-        print(f"An error occurred: {e}")
-    finally:
-        if conn:
-            conn.close()
-        sys.stdout = old_stdout
-        output = new_stdout.getvalue()
-        new_stdout.close()
-        return output
-
-
 if __name__ == '__main__':
     app.run(debug=True)
 
 #####################################################################################################################
 
-
+# import time
+#
+# from quart import request, render_template, Quart, redirect, url_for
+# import asyncio
+# import json
+# import aiomysql
+# import requests
+# from aiomysql import connection
+# from bson import ObjectId
+# import pymongo
+# from pymongo import MongoClient
+# from Admin_panel_autologin import LoginToPanel, AdminUrl, response
+# from endpoints import ENDPOINTS, VERIFY_OTP
+# from test_data import JoinCommunity, SendMessage, SendReaction, RemoveUser, data_mod, generic_headers
+# import aiohttp
 #
 # app = Quart(__name__)
 #
