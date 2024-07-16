@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Remove User from Community</title>
+</head>
+<body>
+    <h1>Remove User from Community</h1>
+    <form method="POST" action="/">
+        <label for="community_id">Community ID:</label>
+        <input type="text" id="community_id" name="community_id" required><br><br>
+        <label for="range">Number of Users to Remove:</label>
+        <input type="number" id="range" name="range" required><br><br>
+        <input type="hidden" name="action" value="remove_user">
+        <button type="submit">Remove Users</button>
+    </form>
+</body>
+</html>
