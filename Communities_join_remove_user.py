@@ -7,7 +7,6 @@ from aiomysql import connection
 from bson import ObjectId
 import pymongo
 from pymongo import MongoClient
-from Admin_panel_autologin import LoginToPanel, AdminUrl, response
 from endpoints import ENDPOINTS, VERIFY_OTP
 from test_data import JoinCommunity, SendMessage, SendReaction, RemoveUser, data_mod, generic_headers
 

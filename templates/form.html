@@ -72,8 +72,8 @@
                 <option value="remove_user">Remove User from Community</option>
                 <option value="delete_community">Delete Community</option>
                 <option value="inventory_operations">Inventory Operations</option>
-                <option value="option2">Option 2</option>
-                <option value="option3">Option 3</option>
+                <option value="club_leaderboard">Club Leaderboard Test</option>
+                <option value="purchases">Purchases</option>
                 <option value="option4">Option 4</option>
                 <option value="option5">Option 5</option>
             </select>
@@ -107,10 +107,12 @@ function toggleFields() {
     // Determine visibility based on selected action
     const isInventoryOperations = action === 'inventory_operations';
     const isDeleteCommunity = action === 'delete_community';
+    const isClubLeaderBoard = action == 'club_leaderboard';
+    const isCoinPurchase = action == 'purchases';
 
-    document.getElementById('lastIdGroup').style.display = (isInventoryOperations || isDeleteCommunity) ? 'none' : 'block';
-    document.getElementById('communityIdGroup').style.display = isInventoryOperations ? 'none' : 'block';
-    document.getElementById('rangeGroup').style.display = isInventoryOperations ? 'none' : 'block';
+    document.getElementById('lastIdGroup').style.display = (isInventoryOperations || isDeleteCommunity || isClubLeaderBoard || isCoinPurchase) ? 'none' : 'block';
+    document.getElementById('communityIdGroup').style.display = (isInventoryOperations || isDeleteCommunity || isClubLeaderBoard || isCoinPurchase) ? 'none' : 'block';
+    document.getElementById('rangeGroup').style.display = (isInventoryOperations || isDeleteCommunity || isClubLeaderBoard || isCoinPurchase) ? 'none' : 'block';
     document.getElementById('userIdGroup').style.display = isDeleteCommunity ? 'block' : 'none';
 }
 </script>

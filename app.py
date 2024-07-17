@@ -5,7 +5,8 @@ import requests
 from bson import ObjectId
 from quart import Quart, request, render_template, redirect, url_for
 from Inventory_purchase import purchase_inventory
-
+from dbConnection import coin_purchases
+from clubLeaderboard import club_leaderboard_operations
 
 app = Quart(__name__)
 
@@ -38,7 +39,7 @@ ENDPOINTS = {
 }
 
 generic_headers = {
-    "appversion": "112",
+    "appversion": "121",
     "platform": "android",
     "Content-Type": "application/json"
 }
@@ -68,10 +69,27 @@ async def join_community_result():
     return await render_template('join_community_result.html', output=output)
 
 
-@app.route('/inventory')
+@app.route('/club_leaderboard_result')
+async def club_leaderboard_result():
+    output = await club_leaderboard_operations()  # Get the output from the query parameter
+    if output is None:
+        output = "No output provided"
+    return await render_template('club_leaderboard_result.html', output=output)
+
+
+@app.route('/purchases_result')
+async def purchases_result():
+    output = await coin_purchases()  # Get the output from the query parameter
+    if output is None:
+        output = "No output provided"
+    return await render_template('purchases_result.html', output=output)
+
+
+@app.route('/inventory_result')
 async def inventory_operations_result():
     output = await purchase_inventory()
     return await render_template('inventory_operations_result.html', output=output)
+
 
 @app.route('/', methods=['GET', 'POST'])
 async def form():
@@ -93,9 +111,14 @@ async def form():
             output = await delete_community(community_id, user_id)
         elif action == 'inventory_operations':
             output = await purchase_inventory()
+        elif action == 'club_leaderboard':
+            output = await club_leaderboard_operations()
+        elif action == 'purchases':
+            output = await coin_purchases()
+
         else:
             return "Invalid action", 400  # Return a 400 Bad Request for undefined actions
-
+        print("_________________")
         return redirect(url_for(f'{action}_result', output=output))
 
     # Show the form by default if it's a GET request or no action was taken.
@@ -111,6 +134,10 @@ async def handle_action(action, last_id, community_id, rang, user_id):
         await delete_community(community_id, user_id)
     elif action == 'inventory_operations':
         await purchase_inventory()
+    elif action == 'club_leaderboard':
+        await club_leaderboard_operations()
+    elif action == 'purchases':
+        await coin_purchases()
     else:
         raise ValueError("Invalid action")
 
