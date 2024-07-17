@@ -69,9 +69,9 @@
             <label for="action">Action:</label>
             <select id="action" name="action" onchange="toggleFields()">
                 <option value="join_community">Join Community</option>
-                <option value="remove_user">Remove User from community</option>
+                <option value="remove_user">Remove User from Community</option>
                 <option value="delete_community">Delete Community</option>
-                <option value="option1">Option 1</option>
+                <option value="inventory_operations">Inventory Operations</option>
                 <option value="option2">Option 2</option>
                 <option value="option3">Option 3</option>
                 <option value="option4">Option 4</option>
@@ -104,9 +104,14 @@
 <script>
 function toggleFields() {
     const action = document.getElementById('action').value;
-    document.getElementById('lastIdGroup').style.display = action !== 'delete_community' ? 'block' : 'none';
-    document.getElementById('rangeGroup').style.display = action !== 'delete_community' && action !== 'join_community' ? 'block' : 'none';
-    document.getElementById('userIdGroup').style.display = action === 'delete_community' ? 'block' : 'none';
+    // Determine visibility based on selected action
+    const isInventoryOperations = action === 'inventory_operations';
+    const isDeleteCommunity = action === 'delete_community';
+
+    document.getElementById('lastIdGroup').style.display = (isInventoryOperations || isDeleteCommunity) ? 'none' : 'block';
+    document.getElementById('communityIdGroup').style.display = isInventoryOperations ? 'none' : 'block';
+    document.getElementById('rangeGroup').style.display = isInventoryOperations ? 'none' : 'block';
+    document.getElementById('userIdGroup').style.display = isDeleteCommunity ? 'block' : 'none';
 }
 </script>
 </body>

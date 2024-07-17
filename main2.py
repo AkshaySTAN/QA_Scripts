@@ -6,8 +6,8 @@ import requests
 from pymongo import MongoClient
 from bson import ObjectId
 
-from data.endpoints import ENDPOINTS
-from tests.test_data import JoinCommunity, SendMessage, SendReaction
+from endpoints import ENDPOINTS
+from test_data import JoinCommunity, SendMessage, SendReaction
 
 last_id = 10040  # from where the code will start picking up userids
 ws_conns_array = []

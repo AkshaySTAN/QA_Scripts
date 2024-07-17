@@ -1,36 +1,39 @@
-import asyncio
 import json
-import aiohttp
-from quart import Quart, request, render_template, redirect, url_for
-from aiomysql import connect
-import time
-import aiomysql
-import requests
-from aiomysql import connection
-from bson import ObjectId
+import aiomysql as aiomysql
 import pymongo
-from pymongo import MongoClient
+import requests
+from bson import ObjectId
+from quart import Quart, request, render_template, redirect, url_for
+from Inventory_purchase import purchase_inventory
+
 
 app = Quart(__name__)
 
-# Database and API settings
+# Mongo connection details
+MONGO_DB_URL = "mongodb+srv://stage-stan:lqlFL2GvRItS3YFi@stan-stage-01.dfrdedi.mongodb.net/"
+MONGO_DB_NAME = "stage"
+COLLECTION_NAME = "communities"
+
+# SQL connection
 DB_HOST = 'nonprod-stan.cuuqnikjun1p.ap-south-1.rds.amazonaws.com'
 DB_PORT = 3306
 DB_USER = 'admin'
 DB_PASS = 'Stan.321'
 DB_NAME = 'stage_stan'
 token_storage = []
+ws_conns_array = []
+members = []
 
-BASE_URL = "https://stage-api.getstan.app/api/v4/communities/"
+Community_BASE_URL = "https://stage-api.getstan.app/api/v4/communities/"
 VERIFY_OTP_URL = "https://stage-api.getstan.app/api/v4/verify/otp"
 
 ENDPOINTS = {
-    "community_join": f"{BASE_URL}join-community",
-    "send_reaction": f"{BASE_URL}message/react",
-    "send_message": f"{BASE_URL}message/send",
-    "remove_member": f"{BASE_URL}remove-member",
-    "get_comments": f"{BASE_URL}comments",
-    "delete": f"{BASE_URL}delete"
+    "community_join": f"{Community_BASE_URL}join-community",
+    "send_reaction": f"{Community_BASE_URL}message/react",
+    "send_message": f"{Community_BASE_URL}message/send",
+    "remove_member": f"{Community_BASE_URL}remove-member",
+    "get_comments": f"{Community_BASE_URL}comments",
+    "delete": f"{Community_BASE_URL}delete"
     # add other endpoints here
 }
 
@@ -57,18 +60,6 @@ data_mod = {
 }
 
 
-@app.before_serving
-async def setup_app():
-    app.db_connection = await connect(host=DB_HOST, port=DB_PORT, user=DB_USER, password=DB_PASS, db=DB_NAME)
-    print("Database connected...")
-
-
-@app.teardown_appcontext
-async def close_db(exc):
-    app.db_connection.close()
-    print("Database connection closed")
-
-
 @app.route('/join_community_result')
 async def join_community_result():
     output = request.args.get('output')  # Get the output from the query parameter
@@ -77,7 +68,11 @@ async def join_community_result():
     return await render_template('join_community_result.html', output=output)
 
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/inventory')
+async def inventory_operations_result():
+    output = await purchase_inventory()
+    return await render_template('inventory_operations_result.html', output=output)
+
 @app.route('/', methods=['GET', 'POST'])
 async def form():
     if request.method == 'POST':
@@ -96,6 +91,8 @@ async def form():
         elif action == 'delete_community':
             user_id = form_data.get('user_id')  # Specific to delete_community action
             output = await delete_community(community_id, user_id)
+        elif action == 'inventory_operations':
+            output = await purchase_inventory()
         else:
             return "Invalid action", 400  # Return a 400 Bad Request for undefined actions
 
@@ -105,14 +102,15 @@ async def form():
     return await render_template('form.html')
 
 
-
-async def handle_action(action, last_id, community_id, rang):
+async def handle_action(action, last_id, community_id, rang, user_id):
     if action == 'join_community':
         await join_community(last_id, community_id, rang)
     elif action == 'remove_user':
         await remove_user(community_id, rang)
     elif action == 'delete_community':
         await delete_community(community_id, user_id)
+    elif action == 'inventory_operations':
+        await purchase_inventory()
     else:
         raise ValueError("Invalid action")
 
@@ -135,7 +133,7 @@ async def join_community(last_id, community_id, rang):
     finally:
         conn.close()
     # Example function for joining a community
-    lastid = last_id
+    # lastid = last_id
     JoinCommunity = {
         "communityId": community_id,
         "password": 'null',
@@ -156,10 +154,10 @@ async def join_community(last_id, community_id, rang):
             'Authorization': f'Bearer {token_storage[i]}',
             'AppVersion': '118'
         }
-        msgheader = {
-            'Authorization': f'Bearer {admin_token}',
-            'AppVersion': '118'
-        }
+        # msgheader = {
+        #     'Authorization': f'Bearer {admin_token}',
+        #     'AppVersion': '118'
+        # }
         join = requests.post(ENDPOINTS['community_join'], json=JoinCommunity, headers=headers)
         print(f"JOIN Status Code: {join.status_code}")
         print(f"Response: {join.json()}")
@@ -193,7 +191,7 @@ async def remove_user(community_id, rang):
         members.append(doc['userId'])
         print(doc['userId'])
         rem_user = {
-            "communityId": com_id,
+            "communityId": community_id,
             "userId": doc['userId']
         }
 
@@ -211,7 +209,7 @@ async def delete_community(community_id, user_id):
         query = f"SELECT phone FROM user WHERE id = {user_id} AND deletedAt IS NULL"
         await cursor.execute(query)
         phon = await cursor.fetchone()
-        data_mod = {
+        data_MOD = {
             "phone": phon,
             "otp": "5555",
             "deviceInfo": {
@@ -228,7 +226,7 @@ async def delete_community(community_id, user_id):
         }
 
     url = "https://stage-api.getstan.app/api/v4/verify/otp"
-    json_data_mod = json.dumps(data_mod)
+    json_data_mod = json.dumps(data_MOD)
     response_mod = requests.post(url, headers=generic_headers, data=json_data_mod)
     result_mod = response_mod.json()
     admin_token = result_mod.get('access_token')
