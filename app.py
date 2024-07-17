@@ -5,7 +5,7 @@ import requests
 from bson import ObjectId
 from quart import Quart, request, render_template, redirect, url_for
 from Inventory_purchase import purchase_inventory
-from dbConnection import coin_purchases
+from dbConnection import run_operations
 from clubLeaderboard import club_leaderboard_operations
 
 app = Quart(__name__)
@@ -79,7 +79,7 @@ async def club_leaderboard_result():
 
 @app.route('/purchases_result')
 async def purchases_result():
-    output = await coin_purchases()  # Get the output from the query parameter
+    output = await run_operations()  # Get the output from the query parameter
     if output is None:
         output = "No output provided"
     return await render_template('purchases_result.html', output=output)
@@ -114,7 +114,7 @@ async def form():
         elif action == 'club_leaderboard':
             output = await club_leaderboard_operations()
         elif action == 'purchases':
-            output = await coin_purchases()
+            output = await run_operations()
 
         else:
             return "Invalid action", 400  # Return a 400 Bad Request for undefined actions
@@ -137,7 +137,7 @@ async def handle_action(action, last_id, community_id, rang, user_id):
     elif action == 'club_leaderboard':
         await club_leaderboard_operations()
     elif action == 'purchases':
-        await coin_purchases()
+        await run_operations()
     else:
         raise ValueError("Invalid action")
 
