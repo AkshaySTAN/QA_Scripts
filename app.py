@@ -7,6 +7,8 @@ from quart import Quart, request, render_template, redirect, url_for
 from Inventory_purchase import purchase_inventory
 from dbConnection import run_operations
 from clubLeaderboard import club_leaderboard_operations
+import io
+import sys
 
 app = Quart(__name__)
 
@@ -24,6 +26,7 @@ DB_NAME = 'stage_stan'
 token_storage = []
 ws_conns_array = []
 members = []
+otput = ""
 
 Community_BASE_URL = "https://stage-api.getstan.app/api/v4/communities/"
 VERIFY_OTP_URL = "https://stage-api.getstan.app/api/v4/verify/otp"
@@ -69,6 +72,14 @@ async def join_community_result():
     return await render_template('join_community_result.html', output=output)
 
 
+@app.route('/remove_user_result')
+async def remove_user_result():
+    output = request.args.get('output')  # Get the output from the query parameter
+    if output is None:
+        output = "No output provided"
+    return await render_template('remove_user_result.html', output=output)
+
+
 @app.route('/club_leaderboard_result')
 async def club_leaderboard_result():
     output = await club_leaderboard_operations()  # Get the output from the query parameter
@@ -106,6 +117,7 @@ async def form():
         elif action == 'remove_user':
             rang = int(form_data.get('range', 0))  # Default to 0 if not provided
             output = await remove_user(community_id, rang)
+            otput = output
         elif action == 'delete_community':
             user_id = form_data.get('user_id')  # Specific to delete_community action
             output = await delete_community(community_id, user_id)
@@ -199,6 +211,9 @@ async def join_community(last_id, community_id, rang):
 
 
 async def remove_user(community_id, rang):
+    old_stdout = sys.stdout
+    redirected_output = io.StringIO()
+    sys.stdout = redirected_output
     url = "https://stage-api.getstan.app/api/v4/verify/otp"
     json_data_mod = json.dumps(data_mod)
     response_mod = requests.post(url, headers=generic_headers, data=json_data_mod)
@@ -223,7 +238,14 @@ async def remove_user(community_id, rang):
         }
 
         remove = requests.post(ENDPOINTS['remove_member'], json=rem_user, headers=headers)
+        print("---here-------")
         print(remove.json())
+    sys.stdout = old_stdout
+    # Get the captured output
+    output = redirected_output.getvalue()
+    redirected_output.close()
+    # Now you can return this output as part of your response to the front end
+    return output
 
 
 async def delete_community(community_id, user_id):
