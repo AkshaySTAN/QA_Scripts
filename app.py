@@ -9,6 +9,8 @@ from dbConnection import run_operations
 from clubLeaderboard import club_leaderboard_operations
 import io
 import sys
+from urls import ADMIN_URL, SUPER_URL, BASIC_ENDPOINTS
+from Admin_panel_autologin import generate_admin_token
 
 app = Quart(__name__)
 
@@ -72,6 +74,14 @@ async def join_community_result():
     return await render_template('join_community_result.html', output=output)
 
 
+@app.route('/create_club_result')
+async def create_club_result():
+    output = request.args.get('output')  # Get the output from the query parameter
+    if output is None:
+        output = "No output provided"
+    return await render_template('create_club_result.html', output=output)
+
+
 @app.route('/remove_user_result')
 async def remove_user_result():
     output = request.args.get('output')  # Get the output from the query parameter
@@ -117,7 +127,6 @@ async def form():
         elif action == 'remove_user':
             rang = int(form_data.get('range', 0))  # Default to 0 if not provided
             output = await remove_user(community_id, rang)
-            otput = output
         elif action == 'delete_community':
             user_id = form_data.get('user_id')  # Specific to delete_community action
             output = await delete_community(community_id, user_id)
@@ -127,7 +136,9 @@ async def form():
             output = await club_leaderboard_operations()
         elif action == 'purchases':
             output = await run_operations()
-
+        elif action == 'create_club':
+            user_id = form_data.get('user_id')
+            output = await create_club(user_id)
         else:
             return "Invalid action", 400  # Return a 400 Bad Request for undefined actions
         print("_________________")
@@ -150,6 +161,8 @@ async def handle_action(action, last_id, community_id, rang, user_id):
         await club_leaderboard_operations()
     elif action == 'purchases':
         await run_operations()
+    elif action == 'create_club':
+        await create_club(user_id)
     else:
         raise ValueError("Invalid action")
 
@@ -350,6 +363,77 @@ async def generate_token(phone):
     except requests.RequestException as e:
         print(f"An error occurred: {e}")
         return None
+
+
+async def create_club(user_id):
+    old_stdout = sys.stdout
+    new_stdout = io.StringIO()
+    sys.stdout = new_stdout
+    conn = await aiomysql.connect(host='nonprod-stan.cuuqnikjun1p.ap-south-1.rds.amazonaws.com', port=3306,
+                                  user='admin', password='Stan.321',
+                                  db='stage_stan')
+
+    print('Database connected....')
+
+    async with conn.cursor() as cursor:
+        query = f"SELECT phone FROM user WHERE id = {user_id} AND deletedAt IS NULL"
+        await cursor.execute(query)
+        result = await cursor.fetchone()
+        if result is None:
+            return None
+        else:
+            print(result)
+            token = await generate_token(result[0])
+            token_storage.append(token)
+            print("token generated successfully for the user \n", token)
+    print("+++++ Starting clubs test ++++\n")
+    payload = {
+        "clubHosterType": "MUGC",
+        "isClubHoster": True,
+        "playerBanTimeInOnevone": "Invalid date",
+        "gameId": "bgmi",
+        "id": user_id
+    }
+    print(payload, "payload")
+    Secret_Token = await generate_admin_token()
+    assign_type_header = {
+        'Accept': '*/*',
+        'Connection': 'keep-alive',
+        'accept': 'application/json',
+        'origin': 'https://stan-admin-7.web.app',
+        'Authorization': f'Bearer {Secret_Token}'
+    }
+    requests.post(url=f"{ADMIN_URL}{BASIC_ENDPOINTS['assign_club_type']}",
+                  headers=assign_type_header,
+                  json=payload)
+    print('Assigning PGC category to user => ' + str(user_id))
+
+    files = {
+        'thumbnail': ('collect.png', open('/Users/macbookprom1/PycharmProjects/collect.png', 'rb'), 'image/png'),
+        'title': (None, f'{user_id}'),
+        'tags': (None, 'Music'),
+        'roomStatus': (None, 'Live'),
+        'pinnedMessage': (None, '{"message":"","link":""}')
+    }
+    createClubHeaders = {
+        # Remove Content-Type from headers; let requests handle it
+        'Accept': '*/*',
+        'GameId': 'freefire',
+        'AppVersion': '118',
+        'Platform': 'android',
+        'SID': '1714035078106-20645',
+        'Authorization': f'Bearer {token}'
+    }
+    create_club = requests.post(url=f"{SUPER_URL}{BASIC_ENDPOINTS['create_club']}", headers=createClubHeaders,
+                                files=files)
+    print('Club created for user => ' + str(user_id))
+    print(create_club.text)
+    # Restore standard output
+    sys.stdout = old_stdout
+    # Get the captured output
+    output = new_stdout.getvalue()
+    new_stdout.close()
+    return output
 
 
 if __name__ == '__main__':

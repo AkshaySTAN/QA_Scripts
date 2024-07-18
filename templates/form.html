@@ -74,7 +74,7 @@
                 <option value="inventory_operations">Inventory Operations</option>
                 <option value="club_leaderboard">Club Leaderboard Test</option>
                 <option value="purchases">Purchases</option>
-                <option value="option4">Option 4</option>
+                <option value="create_club">Create Clubs</option>
                 <option value="option5">Option 5</option>
             </select>
         </div>
@@ -104,17 +104,30 @@
 <script>
 function toggleFields() {
     const action = document.getElementById('action').value;
-    // Determine visibility based on selected action
-    const isInventoryOperations = action === 'inventory_operations';
-    const isDeleteCommunity = action === 'delete_community';
-    const isClubLeaderBoard = action == 'club_leaderboard';
-    const isCoinPurchase = action == 'purchases';
+    const allGroups = ['lastIdGroup', 'communityIdGroup', 'rangeGroup'];
+    const displayStyle = action === 'join_community' || action === 'remove_user' ? 'block' : 'none';
 
-    document.getElementById('lastIdGroup').style.display = (isInventoryOperations || isDeleteCommunity || isClubLeaderBoard || isCoinPurchase) ? 'none' : 'block';
-    document.getElementById('communityIdGroup').style.display = (isInventoryOperations || isDeleteCommunity || isClubLeaderBoard || isCoinPurchase) ? 'none' : 'block';
-    document.getElementById('rangeGroup').style.display = (isInventoryOperations || isDeleteCommunity || isClubLeaderBoard || isCoinPurchase) ? 'none' : 'block';
-    document.getElementById('userIdGroup').style.display = isDeleteCommunity ? 'block' : 'none';
+    // Show or hide common fields based on action
+    allGroups.forEach(group => {
+        document.getElementById(group).style.display = displayStyle;
+    });
+
+    // Handle specific cases
+    if (action === 'delete_community' || action === 'create_club') {
+        document.getElementById('userIdGroup').style.display = 'block';
+    } else {
+        document.getElementById('userIdGroup').style.display = 'none';
+    }
+
+    // Only show submit button for other options
+    if (action === 'inventory_operations' || action === 'club_leaderboard' || action === 'purchases' || action === 'option5') {
+        allGroups.forEach(group => {
+            document.getElementById(group).style.display = 'none';
+        });
+        document.getElementById('userIdGroup').style.display = 'none';
+    }
 }
+toggleFields();  // Call on load to set initial state
 </script>
 </body>
 </html>
