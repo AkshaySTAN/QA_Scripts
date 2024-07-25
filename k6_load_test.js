@@ -31,7 +31,7 @@ export default function () {
         "Platform": "android",
         "SID": "1719303489596-28317",
         "TS": "undefined",
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJiZ21pUHJvZmlsZUlkIjo0Mzc5MjksImV4cCI6MTcyNDUwMzMxMSwiZnJlZWZpcmVQcm9maWxlSWQiOjQzNzkzOCwiaWF0IjoxNzIxOTExMzExLCJpZCI6NTA5NjIxfQ.McuOseAy5f_IxeocR0dGVmLTKWMmy7s2IPbH4b3Tup8"
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJiZ21pUHJvZmlsZUlkIjo0Mzc5MjksImV4cCI6MTcyNDUwNzEwMSwiZnJlZWZpcmVQcm9maWxlSWQiOjQzNzkzOCwiaWF0IjoxNzIxOTE1MTAxLCJpZCI6NTA5NjIxfQ.P7DDBbDsCF5jrKHMMTW7BgNg2Sp_EjtvfHiwIBbfjjw"
     };
 
    
