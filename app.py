@@ -137,8 +137,9 @@ async def form():
         elif action == 'purchases':
             output = await run_operations()
         elif action == 'create_club':
-            user_id = form_data.get('user_id')
-            output = await create_club(user_id)
+            last_id = int(form_data.get('last_id', 0))
+            rang = form_data.get('range', 0)
+            output = await create_club(last_id, rang)
         else:
             return "Invalid action", 400  # Return a 400 Bad Request for undefined actions
         print("_________________")
@@ -162,7 +163,7 @@ async def handle_action(action, last_id, community_id, rang, user_id):
     elif action == 'purchases':
         await run_operations()
     elif action == 'create_club':
-        await create_club(user_id)
+        await create_club(user_id, rang)
     else:
         raise ValueError("Invalid action")
 
@@ -365,75 +366,88 @@ async def generate_token(phone):
         return None
 
 
-async def create_club(user_id):
+async def create_club(user_id, rang):
     old_stdout = sys.stdout
     new_stdout = io.StringIO()
     sys.stdout = new_stdout
-    conn = await aiomysql.connect(host='nonprod-stan.cuuqnikjun1p.ap-south-1.rds.amazonaws.com', port=3306,
-                                  user='admin', password='Stan.321',
-                                  db='stage_stan')
+    conn = None
+    user_ids = []
+    try:
+        # Initialize database connection
+        conn = await aiomysql.connect(
+            host='nonprod-stan.cuuqnikjun1p.ap-south-1.rds.amazonaws.com',
+            port=3306, user='admin', password='Stan.321', db='stage_stan'
+        )
+        print('Database connected....')
 
-    print('Database connected....')
-
-    async with conn.cursor() as cursor:
-        query = f"SELECT phone FROM user WHERE id = {user_id} AND deletedAt IS NULL"
-        await cursor.execute(query)
-        result = await cursor.fetchone()
-        if result is None:
-            return None
-        else:
-            print(result)
-            token = await generate_token(result[0])
-            token_storage.append(token)
-            print("token generated successfully for the user \n", token)
-    print("+++++ Starting clubs test ++++\n")
-    payload = {
-        "clubHosterType": "MUGC",
-        "isClubHoster": True,
-        "playerBanTimeInOnevone": "Invalid date",
-        "gameId": "bgmi",
-        "id": user_id
-    }
-    print(payload, "payload")
-    Secret_Token = await generate_admin_token()
-    assign_type_header = {
-        'Accept': '*/*',
-        'Connection': 'keep-alive',
-        'accept': 'application/json',
-        'origin': 'https://stan-admin-7.web.app',
-        'Authorization': f'Bearer {Secret_Token}'
-    }
-    requests.post(url=f"{ADMIN_URL}{BASIC_ENDPOINTS['assign_club_type']}",
-                  headers=assign_type_header,
-                  json=payload)
-    print('Assigning PGC category to user => ' + str(user_id))
-
-    files = {
-        'thumbnail': ('collect.png', open('/Users/macbookprom1/PycharmProjects/collect.png', 'rb'), 'image/png'),
-        'title': (None, f'{user_id}'),
-        'tags': (None, 'Music'),
-        'roomStatus': (None, 'Live'),
-        'pinnedMessage': (None, '{"message":"","link":""}')
-    }
-    createClubHeaders = {
-        # Remove Content-Type from headers; let requests handle it
-        'Accept': '*/*',
-        'GameId': 'freefire',
-        'AppVersion': '118',
-        'Platform': 'android',
-        'SID': '1714035078106-20645',
-        'Authorization': f'Bearer {token}'
-    }
-    create_club = requests.post(url=f"{SUPER_URL}{BASIC_ENDPOINTS['create_club']}", headers=createClubHeaders,
-                                files=files)
-    print('Club created for user => ' + str(user_id))
-    print(create_club.text)
-    # Restore standard output
-    sys.stdout = old_stdout
-    # Get the captured output
-    output = new_stdout.getvalue()
-    new_stdout.close()
-    return output
+        async with conn.cursor() as cursor:
+            for i in range(int(rang)):  # assuming rang is the upper limit integer
+                print(f"Processing index: {i}")  # Debug statement
+                query = f"SELECT phone FROM user WHERE id = '{user_id}' AND deletedAt IS NULL"
+                await cursor.execute(query)
+                result = await cursor.fetchone()
+                if result is not None:
+                    print(f"Phone for user_id {user_id}: {result[0]}")
+                    token = await generate_token(result[0])
+                    token_storage.append(token)
+                    user_ids.append(user_id)
+                    user_id = int(user_id) + 1
+                    print(f"Token generated successfully for the user: {token}")
+                else:
+                    print("No user found, or user is deleted.")
+                    continue
+                print("+++++ Starting clubs test ++++\n", token_storage)
+                #  for i in range(int(rang)):
+                payload = {
+                    "clubHosterType": "MUGC",
+                    "isClubHoster": True,
+                    "playerBanTimeInOnevone": "Invalid date",
+                    "gameId": "bgmi",
+                    "id": user_ids[i]
+                }
+                print(payload, "payload")
+                Secret_Token = await generate_admin_token()
+                assign_type_header = {
+                    'Accept': '*/*',
+                    'Connection': 'keep-alive',
+                    'accept': 'application/json',
+                    'origin': 'https://stan-admin-7.web.app',
+                    'Authorization': f'Bearer {Secret_Token}'
+                }
+                response = requests.post(url=f"{ADMIN_URL}{BASIC_ENDPOINTS['assign_club_type']}",
+                                         headers=assign_type_header, json=payload)
+                print('Assigning PGC category to user => ' + str(user_id))
+                print(response.text)
+                files = {
+                    'thumbnail': (
+                    'collect.png', open('/Users/macbookprom1/PycharmProjects/collect.png', 'rb'), 'image/png'),
+                    'title': (None, f'{user_id}'),
+                    'tags': (None, 'Music'),
+                    'roomStatus': (None, 'Live'),
+                    'pinnedMessage': (None, '{"message":"","link":""}')
+                }
+                createClubHeaders = {
+                        'Accept': '*/*',
+                        'GameId': 'freefire',
+                        'AppVersion': '118',
+                        'Platform': 'android',
+                        'SID': '1714035078106-20645',
+                        'Authorization': f'Bearer {token}'
+                }
+                create_a_club = requests.post(url=f"{SUPER_URL}{BASIC_ENDPOINTS['create_club']}",
+                                                  headers=createClubHeaders, files=files)
+                print('Club created for user =>' + str(user_id))
+                print('\n')
+                print(create_a_club.text)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        if conn:
+            conn.close()
+        sys.stdout = old_stdout
+        output = new_stdout.getvalue()
+        new_stdout.close()
+        return output
 
 
 if __name__ == '__main__':
