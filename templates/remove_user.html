@@ -2,17 +2,99 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Remove User from Community</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background: linear-gradient(to right, #12002b, #3a0b6d, #220136);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .form-container {
+            background-color: rgba(0, 0, 0, 0.85);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            border: 1px solid #5e0075;
+            backdrop-filter: blur(10px);
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .form-container h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #5e0075;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            font-weight: 700;
+            color: #ccc;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #fff;
+            background-color: #222;
+            margin-bottom: 20px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            border-color: #5e0075;
+            box-shadow: 0 0 15px rgba(94, 0, 117, 0.75);
+        }
+
+        button {
+            background-color: #4a148c;
+            color: #fff;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            width: 100%;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #6a1b9a;
+        }
+    </style>
 </head>
 <body>
-    <h1>Remove User from Community</h1>
-    <form method="POST" action="/">
-        <label for="community_id">Community ID:</label>
-        <input type="text" id="community_id" name="community_id" required><br><br>
-        <label for="range">Number of Users to Remove:</label>
-        <input type="number" id="range" name="range" required><br><br>
-        <input type="hidden" name="action" value="remove_user">
-        <button type="submit">Remove Users</button>
-    </form>
+    <div class="form-container">
+        <h1>Remove User from Community</h1>
+        <form method="POST" action="/">
+            <label for="community_id">Community ID:</label>
+            <input type="text" id="community_id" name="community_id" required>
+
+            <label for="range">Number of Users to Remove:</label>
+            <input type="number" id="range" name="range" required>
+
+            <input type="hidden" name="action" value="remove_user">
+            <button type="submit">Remove Users</button>
+        </form>
+    </div>
 </body>
 </html>

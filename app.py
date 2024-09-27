@@ -146,7 +146,7 @@ async def form():
         return redirect(url_for(f'{action}_result', output=output))
 
     # Show the form by default if it's a GET request or no action was taken.
-    return await render_template('form.html')
+    return await render_template('test_form.html')
 
 
 async def handle_action(action, last_id, community_id, rang, user_id):
@@ -373,7 +373,7 @@ async def create_club(user_id, rang):
     conn = None
     user_ids = []
     try:
-        # Initialize database connection
+        # Initialize py connection
         conn = await aiomysql.connect(
             host='nonprod-stan.cuuqnikjun1p.ap-south-1.rds.amazonaws.com',
             port=3306, user='admin', password='Stan.321', db='stage_stan'
@@ -399,7 +399,7 @@ async def create_club(user_id, rang):
                 print("+++++ Starting clubs test ++++\n", token_storage)
                 #  for i in range(int(rang)):
                 payload = {
-                    "clubHosterType": "MUGC",
+                    "clubHosterType": "UGC",
                     "isClubHoster": True,
                     "playerBanTimeInOnevone": "Invalid date",
                     "gameId": "bgmi",
@@ -416,7 +416,7 @@ async def create_club(user_id, rang):
                 }
                 response = requests.post(url=f"{ADMIN_URL}{BASIC_ENDPOINTS['assign_club_type']}",
                                          headers=assign_type_header, json=payload)
-                print('Assigning PGC category to user => ' + str(user_id))
+                print('Assigning UGC category to user => ' + str(user_id))
                 print(response.text)
                 files = {
                     'thumbnail': (
@@ -429,7 +429,7 @@ async def create_club(user_id, rang):
                 createClubHeaders = {
                         'Accept': '*/*',
                         'GameId': 'freefire',
-                        'AppVersion': '118',
+                        'AppVersion': '133',
                         'Platform': 'android',
                         'SID': '1714035078106-20645',
                         'Authorization': f'Bearer {token}'
