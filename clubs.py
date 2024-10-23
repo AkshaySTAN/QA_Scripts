@@ -2,6 +2,7 @@ import asyncio
 import json
 import aiomysql
 import requests
+import time
 # from Communities_join_remove_user import UsrRange, last_id
 from urls import SUPER_URL, ADMIN_URL, BASIC_ENDPOINTS
 
@@ -168,6 +169,59 @@ def create_club():
         print(create_a_club.text)
 
 
+def Create_Upcoming_clubs():
+    print("+++++ Starting upcoming clubs test ++++")
+    secret_token = generate_admin_token()
+    print(user_ids)
+    for i in range(len(token_storage)):
+        user_id = int(user_ids[i])
+        print(user_id)
+        payload = {
+            "clubHosterType": "MUGC",
+            "isClubHoster": True,
+            "playerBanTimeInOnevone": "Invalid date",
+            "gameId": "bgmi",
+            "id": user_id
+        }
+        print(payload, "payload")
+
+        assign_type_header = {
+            'Accept': '*/*',
+            'Connection': 'keep-alive',
+            'accept': 'application/json',
+            'origin': 'https://stan-admin-7.web.app',
+            'Authorization': f'Bearer {secret_token}'
+        }
+        assign_mod_category = requests.post(url=f"{ADMIN_URL}{BASIC_ENDPOINTS['assign_club_type']}",
+                                            headers=assign_type_header,
+                                            json=payload)
+        print('Assigning MUGC category to user => ' + str(user_ids[i]))
+        print(assign_mod_category.text)
+        time2 = i*2000 + int(time.time())
+        payload = {
+            'title': (None, f'Upcoming_test_{user_ids[i]}'),  # Key-value pair as a tuple
+            'tags': (None, 'Entertainment'),
+            'roomStatus': (None, 'Schedule'),
+            'scheduledTime': (None, f'{time2}'),  # Ensure this is the correct format
+            'pinnedMessage': (None, '{"message":"","link":""}')  # Proper JSON-like string
+        }
+
+        headers = {
+            'Accept': 'application/json, text/plain, */*',
+            'GameId': 'freefire',
+            'AppVersion': '127',
+            'Platform': 'ios',
+            'SID': '1714031941568-62195',
+            'TS': 'undefined',  # Ensure this is correct or remove if not needed
+            'Authorization': f'Bearer {token_storage[i]}'
+            #        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJiZ21pUHJvZmlsZUlkIjozNDA5NiwiZXhwIjoxNzI5MjQ2MjEyLCJmcmVlZmlyZVByb2ZpbGVJZCI6MzQwOTcsImlhdCI6MTcyOTE1OTgxMiwiaWQiOjE5NzY5fQ.KQVdfnWEsn8IPCNFYutQyX30drklQQ8CEG7-WYieHwI'
+        }
+        create_a_club = requests.post(url=f"{SUPER_URL}{BASIC_ENDPOINTS['create_club']}", headers=headers,
+                                      files=payload)
+        print('Club created for user => ' + str(user_ids[i]))
+        print(create_a_club.text)
+
+
 if __name__ == '__main__':
     asyncio.get_event_loop().run_until_complete(main())
-    create_club()
+    Create_Upcoming_clubs()
