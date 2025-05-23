@@ -1,0 +1,11 @@
+{"jackpot_id": 446, "name": "Stan User", "profilePic": "", "ticketsBought": 1, "ticketsWon": 1, "currencySpent": 2, "currencyWon": 4}
+{"jackpot_id": 447, "name": "Stan User", "profilePic": "", "ticketsBought": 1, "ticketsWon": 1, "currencySpent": 5, "currencyWon": 6}
+{"jackpot_id": 447, "name": "Stan User", "profilePic": "", "ticketsBought": 1, "ticketsWon": 1, "currencySpent": 5, "currencyWon": 6}
+{"jackpot_id": 448, "name": "Psy..", "profilePic": "https://example.com/rahul-profile.jpg", "ticketsBought": 2, "ticketsWon": 1, "currencySpent": 20, "currencyWon": 10}
+{"jackpot_id": 448, "name": "Stan User", "profilePic": "", "ticketsBought": 1, "ticketsWon": 1, "currencySpent": 10, "currencyWon": 10}
+{"jackpot_id": 448, "name": "Stan User", "profilePic": "", "ticketsBought": 1, "ticketsWon": 1, "currencySpent": 10, "currencyWon": 10}
+{"jackpot_id": 448, "name": "Stan User", "profilePic": "", "ticketsBought": 1, "ticketsWon": 1, "currencySpent": 10, "currencyWon": 10}
+{"jackpot_id": 449, "name": "Stan User", "profilePic": "", "ticketsBought": 1, "ticketsWon": 1, "currencySpent": 20, "currencyWon": 25}
+{"jackpot_id": 449, "name": "Stan User", "profilePic": "", "ticketsBought": 1, "ticketsWon": 1, "currencySpent": 20, "currencyWon": 25}
+{"jackpot_id": 450, "name": "Stan User", "profilePic": "", "ticketsBought": 1, "ticketsWon": 1, "currencySpent": 30, "currencyWon": 35}
+{"jackpot_id": 450, "name": "Stan User", "profilePic": "", "ticketsBought": 1, "ticketsWon": 1, "currencySpent": 30, "currencyWon": 35}

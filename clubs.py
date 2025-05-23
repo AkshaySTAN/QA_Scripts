@@ -144,31 +144,52 @@ def create_club():
         assign_mod_category = requests.post(url=f"{ADMIN_URL}{BASIC_ENDPOINTS['assign_club_type']}",
                                             headers=assign_type_header,
                                             json=payload)
-        print('Assigning PGC category to user => ' + str(user_ids[i]))
+        print('Assigning MUGC category to user => ' + str(user_ids[i]))
         print(assign_mod_category.text)
 
-        files = {
-            'thumbnail': ('collect.png', open('/Users/macbookprom1/PycharmProjects/collect.png', 'rb'), 'image/png'),
-            'title': (None, f'{user_id}'),
-            'tags': (None, 'Music'),
-            'roomStatus': (None, 'Live'),
-            'pinnedMessage': (None, '{"message":"","link":""}')
+        # Updated payload to match the Postman request
+        club_payload = {
+            'title': f'Kohli_i',
+            'tags': 'Ludo',
+            'roomStatus': 'Live',
+            'autoJoinStage': 'true',
+            'pinnedMessage': '{"message":"","link":""}'
         }
+
+        # Updated headers to match the Postman request
         createClubHeaders = {
-            # Remove Content-Type from headers; let requests handle it
-            'Accept': '*/*',
-            'GameId': 'freefire',
-            'AppVersion': '118',
+            'Accept': 'application/json, text/plain, */*',
+            'AppVersion': '180',
             'Platform': 'android',
-            'SID': '1714035078106-20645',
+            'SID': '1736166992009-27857',
             'Authorization': f'Bearer {token_storage[i]}'
         }
-        create_a_club = requests.post(url=f"{SUPER_URL}{BASIC_ENDPOINTS['create_club']}", headers=createClubHeaders,
-                                      files=files)
-        print('Club created for user => ' + str(user_ids[i]))
-        print(create_a_club.text)
+        files = [(key, (None, value)) for key, value in club_payload.items()]
+        print(f"URL: {SUPER_URL}{BASIC_ENDPOINTS['create_club']}")
+        print(f"Headers: {createClubHeaders}")
+        print(f"Payload: {club_payload}")
+        try:
+            create_a_club = requests.post(
+                url=f"{SUPER_URL}{BASIC_ENDPOINTS['create_club']}",
+                headers=createClubHeaders,
+                files=files
+            )
+            print(f"Response status code: {create_a_club.status_code}")
+            print(f"Response content: {create_a_club.text}")
+            if create_a_club.status_code == 200:
+                print(f'Club created for user => {user_ids[i]}')
+            else:
+                print(f'Club could not be created for user => {user_ids[i]}')
+        except requests.exceptions.RequestException as e:
+            print(f"An error occurred: {e}")
+            print(f"Club could not be created for user => {user_ids[i]}")
+            if hasattr(e, 'response'):
+                print(f"Response status code: {e.response.status_code}")
+                print(f"Response headers: {e.response.headers}")
+                print(f"Response content: {e.response.text}")
 
-
+        # Add a small delay to avoid overwhelming the server
+        time.sleep(5)
 def Create_Upcoming_clubs():
     print("+++++ Starting upcoming clubs test ++++")
     secret_token = generate_admin_token()
@@ -224,4 +245,5 @@ def Create_Upcoming_clubs():
 
 if __name__ == '__main__':
     asyncio.get_event_loop().run_until_complete(main())
-    Create_Upcoming_clubs()
+    create_club()
+

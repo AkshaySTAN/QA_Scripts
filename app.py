@@ -12,6 +12,8 @@ import sys
 from urls import ADMIN_URL, SUPER_URL, BASIC_ENDPOINTS
 from Admin_panel_autologin import generate_admin_token
 import time
+from raffle_check import check_raffles_and_notify # Assuming this is the function to call
+from token_generation import main as get_tokens_main # Import for token generation
 
 app = Quart(__name__)
 
@@ -45,7 +47,7 @@ ENDPOINTS = {
 }
 
 generic_headers = {
-    "appversion": "121",
+    "appversion": "169",
     "platform": "android",
     "Content-Type": "application/json"
 }
@@ -121,12 +123,21 @@ async def inventory_operations_result():
     return await render_template('inventory_operations_result.html', output=output)
 
 
+@app.route('/raffle_test_result')
+async def raffle_test_result():
+    output = request.args.get('output')  # Get the output from the query parameter
+    if output is None:
+        output = "No output provided"
+    return await render_template('raffle_check_result.html', output=output)
+
+
 @app.route('/', methods=['GET', 'POST'])
 async def form():
     if request.method == 'POST':
         form_data = await request.form
         action = form_data.get('action')
         community_id = form_data.get('community_id')
+        output = ""
 
         # Different actions might require different parameters and handling.
         if action == 'join_community':
@@ -153,16 +164,31 @@ async def form():
             last_id = int(form_data.get('last_id', 0))
             rang = form_data.get('range', 0)
             output = await Create_Upcoming_clubs(last_id, rang)
+        elif action == 'raffle_test':
+            num_token_users = form_data.get('num_token_users')
+            starting_user_id = form_data.get('starting_user_id')
+
+            if num_token_users and starting_user_id:
+                output = await check_raffles_and_notify(
+                    num_users_for_tokens=int(num_token_users),
+                    starting_user_id_for_tokens=int(starting_user_id)
+                )
+            else:
+                output = await check_raffles_and_notify()
         else:
             return "Invalid action", 400  # Return a 400 Bad Request for undefined actions
+        
+        if output is None: # Ensure output is not None before redirecting
+            output = "Action performed, but no specific output was generated."
+
         print("_________________")
-        return redirect(url_for(f'{action}_result', output=output))
+        return redirect(url_for(f'{action}_result', output=str(output))) # Ensure output is string
 
     # Show the form by default if it's a GET request or no action was taken.
-    return await render_template('test_form.html')
+    return await render_template('form.html')
 
 
-async def handle_action(action, last_id, community_id, rang, user_id):
+async def handle_action(action, last_id, community_id, rang, user_id, raffle_params=None, token_gen_params=None):
     if action == 'join_community':
         await join_community(last_id, community_id, rang)
     elif action == 'remove_user':
@@ -179,6 +205,13 @@ async def handle_action(action, last_id, community_id, rang, user_id):
         await create_club(user_id, rang)
     elif action == 'Create_Upcoming_clubs':
         await Create_Upcoming_clubs(last_id, rang)
+    elif action == 'raffle_test':
+        params_for_raffle = {}
+        if token_gen_params: # Add token generation params if provided
+            params_for_raffle['num_users_for_tokens'] = token_gen_params.get('num_token_users')
+            params_for_raffle['starting_user_id_for_tokens'] = token_gen_params.get('starting_user_id')
+        
+        await check_raffles_and_notify(**params_for_raffle)
     else:
         raise ValueError("Invalid action")
 
@@ -220,7 +253,7 @@ async def join_community(last_id, community_id, rang):
     for i in range(len(token_storage)):
         headers = {
             'Authorization': f'Bearer {token_storage[i]}',
-            'AppVersion': '118'
+            'AppVersion': '169'
         }
         # msgheader = {
         #     'Authorization': f'Bearer {admin_token}',
@@ -251,7 +284,7 @@ async def remove_user(community_id, rang):
     print("got the admin_token", admin_token)
     headers = {
         'Authorization': f'Bearer {admin_token}',
-        'AppVersion': '118'
+        'AppVersion': '169'
     }
     client = pymongo.MongoClient(MONGO_DB_URL)
     db = client[MONGO_DB_NAME]
@@ -307,11 +340,12 @@ async def delete_community(community_id, user_id):
     json_data_mod = json.dumps(data_MOD)
     response_mod = requests.post(url, headers=generic_headers, data=json_data_mod)
     result_mod = response_mod.json()
+    print(result_mod)
     admin_token = result_mod.get('access_token')
     print("got the admin_token", admin_token)
     header = {
         'Authorization': f'Bearer {admin_token}',
-        'AppVersion': '118'
+        'AppVersion': '169'
     }
     data = {
         "communityId": community_id,
@@ -416,7 +450,7 @@ async def create_club(user_id, rang):
                 payload = {
                     "clubHosterType": "PGC",
                     "isClubHoster": True,
-                    "playerBanTimeInOnevone": "Invalid date",
+                    # "playerBanTimeInOnevone": "Invalid date",
                     "gameId": "bgmi",
                     "id": user_ids[i]
                 }
@@ -431,8 +465,9 @@ async def create_club(user_id, rang):
                 }
                 response = requests.post(url=f"{ADMIN_URL}{BASIC_ENDPOINTS['assign_club_type']}",
                                          headers=assign_type_header, json=payload)
-                print('Assigning PGC category to user => ' + str(user_id))
                 print(response.text)
+                print('Assigning PGC category to user => ' + str(user_id))
+
                 # files = {
                 #     'thumbnail': (
                 #     'collect.png', open('/Users/macbookprom1/PycharmProjects/collect.png', 'rb'), 'image/png'),
@@ -453,32 +488,34 @@ async def create_club(user_id, rang):
                 #                                   headers=createClubHeaders, files=files)
 
                 data = {
-                    "thumbnail": "https://stan-bucket.sgp1.cdn.digitaloceanspaces.com/CMS/ff-diwali.webp?1728565790961",
-                    "title": "sddsd",
-                    "tags": "Freefire",
-                    "roomStatus": "Schedule",
+                    "thumbnail": "https://stan-bucket.sgp1.cdn.digitaloceanspaces.com/club/categories/images/Music.webp",
+                    "title": "kohl",
+                    "tags": "Ludo",
+                    "roomStatus": "Live",
                     "autoJoinStage": False,  # Proper boolean value
-                    "scheduledTime": "1729002312",
-                    "pinnedMessage": "{\"message\":\"\",\"link\":\"\"}"
+                    # "scheduledTime": "1729002312",
+                    # "pinnedMessage": "{\"message\":\"\",\"link\":\"\"}"
                 }
 
                 createClubHeaders = {
                     "Accept": "application/json, text/plain, */*",
                     "GameId": "freefire",
-                    "AppVersion": "144",
+                    "AppVersion": "169",
                     "Platform": "android",
                     "SID": "1728632173286-98933",
-                    'Authorization': f'Bearer {token}'
+                    "Authorization": f"Bearer {token}"
+                    # "Content-Type": "multipart/form-data"
                 }
-
+                print("before call")
                 create_a_club = requests.post(
                     url="https://stage-api.getstan.app/api/v5/club",
                     headers=createClubHeaders,
                     json=json.dumps(data)  # Use json parameter instead of data for JSON
                 )
-                # print('Club created for user =>' + str(user_id))
-                print('\n')
                 print(create_a_club.text)
+                print('Club created for user =>' + str(user_id))
+                print('\n')
+
     except Exception as e:
         print(f"An error occurred: {e}")
     finally:
@@ -488,6 +525,7 @@ async def create_club(user_id, rang):
         output = new_stdout.getvalue()
         new_stdout.close()
         return output
+
 
 
 async def Create_Upcoming_clubs(user_id, rang):

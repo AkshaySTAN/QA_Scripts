@@ -76,7 +76,7 @@ async def generate_token(phone):
 
     # Headers
     headers1 = {
-        "appversion": "112",
+        "appversion": "169",
         "platform": "android",
         "Content-Type": "application/json"
     }
@@ -125,11 +125,11 @@ def communities():
     for i in range(len(token_storage)):
         headers = {
             'Authorization': f'Bearer {token_storage[i]}',
-            'AppVersion': '118'
+            'AppVersion': '169'
         }
         msgheader = {
             'Authorization': f'Bearer {admin_token}',
-            'AppVersion': '118'
+            'AppVersion': '169'
         }
         join = requests.post(ENDPOINTS['community_join'], json=JoinCommunity, headers=headers)
         print(f"JOIN Status Code: {join.status_code}")
@@ -162,7 +162,7 @@ def remove_user():
     print("admin_token", admin_token)
     headers = {
         'Authorization': f'Bearer {admin_token}',
-        'AppVersion': '118'
+        'AppVersion': '169'
     }
     com_id = input("Enter the community id to remove the users from")
     num = int(input("Enter the no.of users you want to remove"))
@@ -184,9 +184,11 @@ def remove_user():
 
 
 def delete_community():
+
+    tokn = generate_token(phone)
     header = {
-            'Authorization': f'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJiZ21pUHJvZmlsZUlkIjozMTk1LCJleHAiOjE3MTg4NjkzOTcsImZyZWVmaXJlUHJvZmlsZUlkIjozMjMxLCJpYXQiOjE3MTg3ODI5OTcsImlkIjoxOTQzfQ.QGkP0u8ZuMDcU-4FoUJ2Yf8EEcPLLvpobOHqY0r-VtE',
-            'AppVersion': '118'
+            'Authorization': f'Bearer {tokn}',
+            'AppVersion': '169'
         }
     commit = input("Enter the community id =>")
     data = {

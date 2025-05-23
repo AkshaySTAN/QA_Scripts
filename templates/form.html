@@ -105,6 +105,7 @@ body {
                     <option value="purchases">Purchases</option>
                     <option value="create_club">Create Club</option>
                     <option value="Create_Upcoming_clubs">Create_Upcoming_clubs</option>
+                    <option value="raffle_test">Raffle Test</option>
                 </select>
             </div>
             <div class="form-group" id="lastIdGroup">
@@ -123,6 +124,14 @@ body {
                 <label for="user_id">User ID (Leader):</label>
                 <input type="text" id="user_id" name="user_id" placeholder="Enter User ID">
             </div>
+            <div class="form-group hidden" id="numTokenUsersGroup">
+                <label for="num_token_users">Number of Users for Tokens:</label>
+                <input type="number" id="num_token_users" name="num_token_users" placeholder="Enter number of users">
+            </div>
+            <div class="form-group hidden" id="startingUserIdGroup">
+                <label for="starting_user_id">Starting User ID for Tokens:</label>
+                <input type="number" id="starting_user_id" name="starting_user_id" placeholder="Enter starting user ID">
+            </div>
             <div class="form-group">
                 <button type="submit">Execute Command</button>
             </div>
@@ -132,27 +141,33 @@ body {
     <script>
  function toggleFields() {
             const action = document.getElementById('action').value;
-            const allGroups = ['lastIdGroup', 'communityIdGroup', 'rangeGroup', 'userIdGroup'];
+            const allGroups = ['lastIdGroup', 'communityIdGroup', 'rangeGroup', 'userIdGroup', 'numTokenUsersGroup', 'startingUserIdGroup']; // Removed raffle field IDs
 
             // Hide all groups initially
             allGroups.forEach(group => {
-                document.getElementById(group).style.display = 'none';
+                const element = document.getElementById(group);
+                if (element) { // Check if element exists
+                    element.style.display = 'none';
+                }
             });
 
             // Show or hide common fields based on action
             if (action === 'join_community' || action === 'remove_user') {
-                allGroups.forEach(group => {
-                    document.getElementById(group).style.display = 'block';
+                ['lastIdGroup', 'communityIdGroup', 'rangeGroup', 'userIdGroup'].forEach(group => {
+                     document.getElementById(group).style.display = 'block';
                 });
             } else if (action === 'create_club' || action == 'Create_Upcoming_clubs' ) {
                 document.getElementById('lastIdGroup').style.display = 'block';
                 document.getElementById('rangeGroup').style.display = 'block';
             } else if (action === 'delete_community') {
                 document.getElementById('userIdGroup').style.display = 'block';
+            } else if (action === 'raffle_test') {
+                document.getElementById('numTokenUsersGroup').style.display = 'block';
+                document.getElementById('startingUserIdGroup').style.display = 'block';
             }
 
-            // Only show submit button for other options
-            if (['inventory_operations', 'club_leaderboard', 'purchases', 'option5'].includes(action)) {
+            // Ensure userIdGroup is hidden for actions that don't need it explicitly.
+            if (['inventory_operations', 'club_leaderboard', 'purchases', 'raffle_test'].includes(action)) {
                 document.getElementById('userIdGroup').style.display = 'none';
             }
         }

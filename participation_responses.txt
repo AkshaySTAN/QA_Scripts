@@ -1,0 +1,10 @@
+{"user_index": 1, "jackpot_id": 446, "response": {"message": "You've entered Tier 1 Jackpot with 1 tickets"}}
+{"user_index": 2, "jackpot_id": 446, "response": {"message": "You've entered Tier 1 Jackpot with 1 tickets"}}
+{"user_index": 1, "jackpot_id": 447, "response": {"message": "You've entered Tier 2 Jackpot with 1 tickets"}}
+{"user_index": 2, "jackpot_id": 447, "response": {"message": "You've entered Tier 2 Jackpot with 1 tickets"}}
+{"user_index": 1, "jackpot_id": 448, "response": {"message": "You've entered Tier 3 Jackpot with 1 tickets"}}
+{"user_index": 2, "jackpot_id": 448, "response": {"message": "You've entered Tier 3 Jackpot with 1 tickets"}}
+{"user_index": 1, "jackpot_id": 449, "response": {"message": "You've entered Tier 4 Jackpot with 1 tickets"}}
+{"user_index": 2, "jackpot_id": 449, "response": {"message": "You've entered Tier 4 Jackpot with 1 tickets"}}
+{"user_index": 1, "jackpot_id": 450, "response": {"message": "Not enough funds", "statusCode": 400, "error": "Bad Request!"}}
+{"user_index": 2, "jackpot_id": 450, "response": {"message": "You've entered Tier 5 Jackpot with 1 tickets"}}
